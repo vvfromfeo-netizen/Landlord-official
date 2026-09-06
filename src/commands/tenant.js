@@ -48,6 +48,8 @@ async function tenantHelp(ctx) {
 
 📊 /stats — показать статистику по квартире (тарифы, показания, баланс)
 
+📨 /support — связь с поддержкой (можно прикрепить фото/документ)
+
 🗑 /delete_me — деактивировать свой аккаунт и покинуть систему
 
 ❌ /cancel — отменить любое незавершённое действие
@@ -87,6 +89,14 @@ async function submitReadings(ctx, user, bot) {
   }
   const flat = await queries.getFlat(flatId);
   if (!flat) return ctx.reply('Квартира не найдена.');
+
+  // Block submission if landlord's subscription has expired
+  if (flat.admin_user_id) {
+    const sub = await queries.getSubscription(flat.admin_user_id);
+    if (sub && !queries.isSubscriptionActive(sub)) {
+      return ctx.reply('Передача показаний недоступна — подписка арендодателя истекла. Обратитесь к арендодателю.');
+    }
+  }
 
   if (isLandlord) {
     const tenants = await queries.getTenantsForFlat(flatId);
